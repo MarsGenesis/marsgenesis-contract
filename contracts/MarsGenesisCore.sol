@@ -16,8 +16,8 @@ contract MarsGenesisCore is ERC721Full {
     /// @dev Maximum number of public minted lands
     uint16 private constant MAX_LANDS = 10000;
 
-    /// @dev Maximum number of promotinal lands
-    uint16 private constant MAX_PROMO_LANDS = 100;
+    /// @dev Maximum number of promotinal lands (400 from the v1 migration, 100 for marketing purposes)
+    uint16 private constant MAX_PROMO_LANDS = 500;
 
     /// @dev Interface for auction contract
     bytes4 private constant InterfaceSignature_MarsGenesisAuction =
@@ -61,7 +61,7 @@ contract MarsGenesisCore is ERC721Full {
     mapping (string => bool) private _coordinatesExists;
     
     /// @dev A mapping to keep track of token media hashes used
-    mapping(string => uint8) hashes;
+    mapping(string => uint8) private _hashes;
     
     /*** INIT ***/
 
@@ -80,7 +80,7 @@ contract MarsGenesisCore is ERC721Full {
 
     /// @notice Mints a new land
     /// @dev The method includes a signature that was provided by the MarsGenesis backend, to ensure data integrity
-    /// @param isPromo Flag that indicates if the land is created for a promotion (callable only by contract admins)
+    /// @param isPromo Flag that indicates if the land is created for a promotion (callable only by contract admins) or a migration from the v1 release
     /// @param topLeftLatLong The lat long pair of the top left corner of the rectangle that defines a land
     /// @param bottomRightLatLong The lat long pair of the bottom right corner of the rectangle that defines a land
     /// @param signature The signature provided by the backend to ensure data integrity
@@ -91,13 +91,13 @@ contract MarsGenesisCore is ERC721Full {
     function mintLand(bool isPromo, string memory topLeftLatLong, string memory bottomRightLatLong, bytes memory signature, string memory ipfsHash, string memory metadataURI, uint cardId, address promoOwner) external payable returns (uint) {
         if (isPromo == true) {
             require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "INVALID_ROLE");
-            require(hashes[ipfsHash] != 1, "HASH_EXISTS");
+            require(_hashes[ipfsHash] != 1, "HASH_EXISTS");
             require(_promoTokenIdTracker.current() < MAX_PROMO_LANDS, "LIMIT_REACHED");
             _promoTokenIdTracker.increment();
         } else {
             require(msg.value >= _currentPrice(), "PAYMENT_TOO_LOW");
-            require(hashes[ipfsHash] != 1, "HASH_EXISTS");
-            bytes32 hash = keccak256(abi.encodePacked(topLeftLatLong, bottomRightLatLong, address(this), cardId));
+            require(_hashes[ipfsHash] != 1, "HASH_EXISTS");
+            bytes32 hash = keccak256(abi.encodePacked(topLeftLatLong, bottomRightLatLong, address(this), cardId, msg.sender));
             address signer = _recoverSigner(hash, signature);
             require(signer == _deployerAddress, "INVALID_SIGNATURE");
         }
@@ -138,7 +138,8 @@ contract MarsGenesisCore is ERC721Full {
         return _lands[tokenId].metadataURI;
     }
 
-    /// Owner methods
+
+    /// Deployer methods
 
     /// @notice Sends free balance to the main wallet 
     /// @dev Only callable by the deployer
@@ -188,12 +189,13 @@ contract MarsGenesisCore is ERC721Full {
         uint newLandId = _tokenIdTracker.current();
         Land memory newLand = Land({topLeftLatLong: topLeftLatLong, bottomRightLatLong: bottomRightLatLong, metadataURI: metadataURI});
         _lands.push(newLand);
+        tokenIdToFirstOwner[newLandId] = to;
 
         _mint(to, newLandId);
 
         _tokenIdTracker.increment();
         _coordinatesExists[coordinatesString] = true;
-        hashes[ipfsHash] = 1;
+        _hashes[ipfsHash] = 1;
 
         emit Discovery(to, newLandId, tokenURI(newLandId), cardId);
 
@@ -201,13 +203,24 @@ contract MarsGenesisCore is ERC721Full {
     }
 
     function _currentPrice() private view returns (uint256) {
-      return (totalSupply() / uint256(100)) * 0.05 ether;
+        uint256 current = totalSupply();
+        if (current <= 3000) {
+            return 0.15 ether;
+        } else if (current <= 5000) {
+            return 0.2 ether;
+        } else if (current <= 8000) {
+            return 0.3 ether;
+        } else if (current < 9000) {
+            return 0.4 ether;
+        } else {
+            return 0.5 ether;
+        }
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal override(ERC721Full) {
       super._beforeTokenTransfer(from, to, tokenId);
 
-      require(address(auctionContract) != address(0), "ACTION_ADDRESS_NOT_SET");
+      require(address(auctionContract) != address(0), "AUCTION_ADDRESS_NOT_SET");
       if(auctionContract.landIdIsForSale(tokenId)) {
           auctionContract.landNoLongerForSale(tokenId);
       }

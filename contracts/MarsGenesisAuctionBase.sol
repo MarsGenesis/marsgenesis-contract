@@ -21,9 +21,6 @@ contract MarsGenesisAuctionBase is ERC165 {
     /// @dev Contract owner balance
     uint public ownerBalance;
 
-    /// @dev Contract non-profits balance
-    uint public npoBalance;
-
     /// @dev Contract owner tax on sales
     uint256 public ownerCut;
 
@@ -36,11 +33,6 @@ contract MarsGenesisAuctionBase is ERC165 {
     /// @dev Address of the deployer account
     address _deployerAddress;
 
-    /// @dev Address of the Non Profit Organization 1
-    address public NPOaddress1;
-
-    /// @dev Address of the Non Profit Organization 2
-    address public NPOaddress2;
 
     /// @notice Inits the contract 
     /// @dev The main contract should support specific interfaces

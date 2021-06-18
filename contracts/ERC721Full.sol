@@ -9,29 +9,33 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
 contract ERC721Full is Context, AccessControlEnumerable, ERC721, ERC721Enumerable, ERC721Pausable {
 
-  /*** INIT ***/
+    /// @dev A mapping to keep track of first owner of every land
+    mapping(uint256 => address) public tokenIdToFirstOwner;
 
-  constructor(string memory name, string memory symbol) ERC721(name, symbol) {
-      _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-  }
 
-  /*** METHODS ***/
+    /*** INIT ***/
 
-  function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override(ERC721, ERC721Enumerable, ERC721Pausable) {
-      super._beforeTokenTransfer(from, to, tokenId);
-  }
+    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    }
 
-  function pause() public {
-      require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "INVALID_ROLE");
-      _pause();
-  }
+    /*** METHODS ***/
 
-  function unpause() public {
-      require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "INVALID_ROLE");
-      _unpause();
-  }
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override(ERC721, ERC721Enumerable, ERC721Pausable) {
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
 
-  function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable) returns (bool) {
-      return super.supportsInterface(interfaceId);
-  }
+    function pause() public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "INVALID_ROLE");
+        _pause();
+    }
+
+    function unpause() public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "INVALID_ROLE");
+        _unpause();
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 }

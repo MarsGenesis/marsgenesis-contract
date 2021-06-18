@@ -57,10 +57,12 @@ contract MarsGenesisAuction is MarsGenesisAuctionBase {
 
         addressToPendingWithdrawal[seller] += netAmount;
 
-        // 80% goes to non-profit
-        uint npoAmount = taxAmount * 80 / 100;
-        npoBalance += npoAmount;
-        ownerBalance += taxAmount - npoAmount;
+        // 80% of tax goes to first owner
+        address firstOwner = nonFungibleContract.tokenIdToFirstOwner(tokenId);
+        uint firstOwnerAmount = taxAmount * 80 / 100;
+        
+        addressToPendingWithdrawal[firstOwner] += firstOwnerAmount;
+        ownerBalance += taxAmount - firstOwnerAmount;
 
         emit LandBought(tokenId, msg.value, seller, msg.sender);
 
@@ -98,24 +100,6 @@ contract MarsGenesisAuction is MarsGenesisAuctionBase {
         require(success);
     }
 
-    /// @notice Sends donation balance to the npo addresses
-    /// @dev Only callable by the deployer
-    function sendDonations() external { 
-        require(msg.sender == _deployerAddress, "INVALID_ROLE");
-        require(npoBalance > 0, "No Balance to send");
-        
-        uint amount = npoBalance;
-        npoBalance = 0;
-
-        uint donation1 = amount / 2;        
-        (bool success1,) = NPOaddress1.call{value: donation1}("");
-        require(success1);
-
-        uint donation2 = amount - donation1;
-        (bool success2,) = NPOaddress2.call{value: donation2}("");
-        require(success2);
-    }
-
     /// @notice Users can withdraw their available balance
     /// @dev Avoids reentrancy
     function withdraw() external { 
@@ -147,11 +131,13 @@ contract MarsGenesisAuction is MarsGenesisAuctionBase {
         uint netAmount = amount - taxAmount;
 
         addressToPendingWithdrawal[seller] += netAmount;
+
+        // 80% of tax goes to first owner
+        address firstOwner = nonFungibleContract.tokenIdToFirstOwner(tokenId);
+        uint firstOwnerAmount = taxAmount * 80 / 100;
         
-        // 80% goes to non-profit
-        uint npoAmount = taxAmount * 80 / 100;
-        npoBalance += npoAmount;
-        ownerBalance += taxAmount - npoAmount;
+        addressToPendingWithdrawal[firstOwner] += firstOwnerAmount;
+        ownerBalance += taxAmount - firstOwnerAmount;
 
         emit LandBought(tokenId, bid.value, seller, bid.bidder);
     }
@@ -182,15 +168,6 @@ contract MarsGenesisAuction is MarsGenesisAuctionBase {
         walletContract = candidateContract;
     }
 
-    /// @notice Updates the nonprofit addresses    
-    /// @param _address1 The address of the NPO 1
-    /// @param _address2 The address of the NPO 2
-    /// @dev Only callable by deployer
-    function setNonProfitAddresses(address payable _address1, address payable _address2) external {
-        require(msg.sender == _deployerAddress, "INVALID_ROLE");
-        NPOaddress1 = _address1;
-        NPOaddress2 = _address2;
-    }
 
     /*** PUBLIC ***/
 
