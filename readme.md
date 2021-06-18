@@ -13,6 +13,6 @@ ERC721 Token with:
 In the [website](https://marsgenesis.com)
 
 ## 🔎 Contract verification
-Contract has been verified with Sourcify. You can check it [here](https://sourcify.dev/) by using the contract address: `0x467439207d53530505E5Eb40eDD6deBBAfF3e063`.
+Contract has been verified with Sourcify. You can check it [here](https://sourcify.dev/) by using the contract address: `0xe6DDbEa6749Cc793bA12Ac22BcA03c3f1Fcf3A80`.
 
-Contract verification in Etherscan is also done.
+Contract verification in Etherscan is also done: [link](https://etherscan.io/address/0xe6DDbEa6749Cc793bA12Ac22BcA03c3f1Fcf3A80)
